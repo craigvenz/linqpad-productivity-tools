@@ -39,7 +39,7 @@ public string TenantId
         var tenantId = Util.LoadString(TenantKey);
         if (string.IsNullOrEmpty(tenantId))
         {
-            tenantId = "cefbfe72-fbfc-450c-b4e2-7bcd2cdb77c0";
+            tenantId = "deadbeef-dead-beef-dead-beefdeadbeef";
             Util.SaveString(TenantKey, tenantId);
         }
         return tenantId;
