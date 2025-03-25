@@ -9,9 +9,10 @@
 // To use any of the Azure.* management libraries, you must authenticate by providing a TokenCredential
 // (Azure.Core.TokenCredential in Azure.Identity.dll).
 
-// Here's the code you need to define a TokenCredential that works with LINQPad's authentication manager:
 #load "GetCurrentUpn"
 
+// Here's the code you need to define a TokenCredential that works with LINQPad's authentication manager:
+// (Sample taken from LINQpad samples)
 public class LINQPadTokenCredential : TokenCredential
 {
 	public readonly string Authority, UserIDHint;
@@ -29,9 +30,9 @@ public class LINQPadTokenCredential : TokenCredential
 	}
 }
 
-// And here's how to use it:
-
 public const string TenantKey = "DefaultTenantId";
+// If you load this query in another query (which is the point of it), your default Tenant ID will
+// be returned by this property. 
 public string TenantId
 {
     get
@@ -39,12 +40,18 @@ public string TenantId
         var tenantId = Util.LoadString(TenantKey);
         if (string.IsNullOrEmpty(tenantId))
         {
-            tenantId = "deadbeef-dead-beef-dead-beefdeadbeef";
-            Util.SaveString(TenantKey, tenantId);
+			//TODO: Set your default Tenant here
+			TenantId = "deadbeef-dead-beef-dead-beefdeadbeef";
         }
         return tenantId;
     }
+	set
+	{
+		// Save the tenant ID for future use in LINQPad's user data store
+		Util.SaveString(TenantKey, value);
+	}
 }
+// Usage example:
 void Main()
 {
 	// Edit this if you're not using Azure Public Cloud
@@ -57,5 +64,5 @@ void Main()
 	var client = new ArmClient (credential);
 
 	// Dump the default subscription:
-	client.GetDefaultSubscription().Data.Dump (1);
+	client.GetDefaultSubscription().Data.Dump(1);
 }
