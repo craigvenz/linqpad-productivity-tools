@@ -151,7 +151,14 @@ void Refresh(DateTime o)
             // timer as rectangular progress bar
             var xElement = XElement.Parse($"<div style='width:98em; height:1.3em; background:#17b;padding:2px{(string.IsNullOrEmpty(Caption) ? ";margin:2pt 0" : "")}'>\r\n\t<div style='background:white; width:{num}%; height:100%; float:right'></div></div>");
             if (!string.IsNullOrEmpty(Caption))
-                xElement = new XElement("table", new XAttribute("style", "border:0; margin:0.2em 0 0.1em 0"), new XElement("tr", new XElement("td", new XAttribute("style", "border:0;padding:0pt 3pt 2pt 0;vertical-align:middle"), Caption), new XElement("td", new XAttribute("style", "border:0"), xElement)));
+                xElement = new XElement("table", 
+                    new XAttribute("style", "border:0; margin:0.2em 0 0.1em 0"), 
+                    new XElement("tr", 
+                        new XElement("td", 
+                            new XAttribute("style", "border:0;padding:0pt 3pt 2pt 0;vertical-align:middle"), Caption), 
+                        new XElement("td", new XAttribute("style", "border:0"), xElement)
+                    )
+                );
             output.Content = Util.RawHtml(xElement);
         }
     }
