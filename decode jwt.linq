@@ -15,46 +15,52 @@
 
 private const string DefaultBackgroundColor = "#202020";
 private const string ErrorBackgroundColor = "red";
-private const string TimerColor = "#909090";
+private const string CaptionColor = "#909090";
 // Main method implements UI, but this query is designed to be able to be #loaded by
 // another query, should you wish to reuse the display methods
 internal void Main()
 {
+    // Uncomment Util.KeepRunning to debug the UI. 
+    // This is necessary because LINQPad main thread exists at the end of the Main method,
+    // and the UI will run in a worker thread using RX. 
+    // Util.KeepRunning();
+    // Also another technique, if the LINQpad debugger isn't sufficient, is to uncomment this, which
+    // will trigger the OS's JIT debugging and provide opportunity to attach visual studio or other debugger
+    // Debugger.Launch();
+
     // Set up UI
-    var title = new Span("JWT Decoder");
-    title.Styles["font-size"]="20px";
-    title.Styles["font-weight"]="bold";
-    title.Styles["color"]="#909090;";
-    title.Dump();
+    new Literal($@"<span style=""font-size: 20px; font-weight: bold; color: {CaptionColor}"">JWT Decoder</span>").Dump();
     var output = new DumpContainer();
     var tokenInput = new TextArea();
+    tokenInput.HtmlElement["spellcheck"] = "false";
     new StackPanel(true,
         new StackPanel(false,
             tokenInput,
-            new Button("Clear", _ => output.ClearContent())
+            new Button("Clear", _ => ResetUI())
         ),
         output).Dump();
+    void ResetUI()
+    {
+        displayObservable?.Dispose();
+        tokenInput.Text = string.Empty;
+        tokenInput.Styles["background-color"] = DefaultBackgroundColor;
+        output.ClearContent();
+    }
     // Set up event handling using RX. Use the TextInput event to trigger the decoding process and throttle the input to avoid excessive processing.
     Observable.FromEventPattern(o => tokenInput.TextInput += o, o => tokenInput.TextInput -= o)
-    .Throttle(TimeSpan.FromSeconds(1))
-    .Subscribe(_ =>
-    {
+              .Throttle(TimeSpan.FromSeconds(1))
+              .Subscribe(_ => {
         // Clear the output if the input is empty
         // and set the background color of the input field to indicate the state.
         if (string.IsNullOrEmpty(tokenInput.Text))
         {
-            output.ClearContent();
-            tokenInput.Styles["background-color"] = DefaultBackgroundColor;
+            ResetUI();
             return;
         }
         var t = DumpToken(tokenInput.Text, output);
         // If the token is null, set the background color to red indicating bad input, otherwise set it to a dark color.
         tokenInput.Styles["background-color"] = t == null ? ErrorBackgroundColor : DefaultBackgroundColor;
     });
-    // Uncomment Util.KeepRunning to debug the UI. 
-    // This is necessary because LINQPad main thread exists at the end of the Main method,
-    // and the UI will run in a worker thread using RX. 
-    // Util.KeepRunning();
 }
 // The JWT decoder uses the JWT library to decode the token and display its contents in a LINQPad DumpContainer.
 public readonly JWT.JwtDecoder JwtDecoder = new JWT.JwtDecoder(
@@ -113,10 +119,8 @@ private static HashSet<string> TimeBasedAttributes = new[] {
  .Append("auth_time")
  .ToHashSet(StringComparer.CurrentCultureIgnoreCase);
 
-// We save the observable in a static field to avoid creating multiple subscriptions to the same observable.
+// We save the observable in a static field to avoid creating multiple subscriptions.
 private static IDisposable? displayObservable;
-// This method is used to display the contents of a JWT token in a LINQPad DumpContainer. It decodes the token, formats its contents, and displays it in a readable format.
-// It also includes a timer to show the expiration status of the token.
 /// <summary>
 /// Dumps the contents of a JWT token in a LINQPad DumpContainer.
 /// </summary>
@@ -132,12 +136,11 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
 {
     // Set default values for the parameters if they are null.
     exclude ??= [];
-    // Set default display method.
     customize ??= DefaultCustomize;
     var panel = new DumpContainer();
     try
     {
-        var t = token.Trim();
+        var t = token?.Trim();
         if (string.IsNullOrEmpty(t)) return null;
         var parts = new JWT.JwtParts(t);
         var header = JwtDecoder.DecodeHeader(t);
@@ -146,10 +149,11 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
         var headerObjects = JsonConvert.DeserializeObject(header) as JObject;
         
         Output(
-          from property in headerObjects?.Concat(objects.Children())
-          let name = ((JProperty)property).Name
-          where !exclude.Contains(name)
-          select property);
+            from property in headerObjects?.Concat(objects.Children())
+            let name = ((JProperty)property).Name
+            where !exclude.Contains(name)
+            select property
+        );
 
         if (includeExpirationTimer)
             ShowTimer(objects);
@@ -183,7 +187,7 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
         else
             OutputInternal(obj);
     }
-    // This method is used to customize the output of each property in the JWT token.
+    // Default display output of each property in the JWT token.
     // It formats the property name and value, and handles specific properties like "iat", "nbf", and "exp" to show a timer.
     // It also provides a human-readable format for the property name and value.
     object DefaultCustomize(JProperty x)
@@ -196,32 +200,30 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
             if (b)
             {
                 var display = new Span($"({v})");
-                display.Styles["color"] = TimerColor;
+                display.Styles["color"] = CaptionColor;
                 return new WrapPanel(new Span(n), display);
             }
             return n;
         }
         // This method is used to format the property value for display.
         // It checks if the property name is in the set of time-based attributes and formats it accordingly.
-        return x switch
-        {
-            _ when TimeBasedAttributes.Contains(x.Name) => 
-                (object)new
-                {
-                    Name = getName(x.Name),
-                    Value = LocalDisplayExtensions.Timer(
-                        () => LongToHumanTime((long?)x.Value),
-                        TimeSpan.FromSeconds(2))
-                },
-            _ => (object)new {
-                Name = getName(x.Name),
-                Value = x.Value
+        return (object)new {
+            Name = getName(x.Name),
+            Value = x switch {
+                _ when TimeBasedAttributes.Contains(x.Name) => 
+                        LocalDisplayExtensions.Timer(
+                            () => LongToHumanTime((long?)x.Value),
+                            TimeSpan.FromSeconds(2)),
+                _ => (object)x.Value
             }
         };
     }
-    (DateTime notBefore, DateTime issuedAt, DateTime expiresOn) GetTimeAttributesFromJwt(JObject contents)
+    (DateTime? notBefore, DateTime? issuedAt, DateTime? expiresOn) GetTimeAttributesFromJwt(JObject contents)
     {
-        DateTime FromUts(JToken? inp) => DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(inp ?? "0")).DateTime;
+        DateTime? FromUts(JToken? inp) 
+            => inp == null 
+               ? (DateTime?)null 
+               : DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(inp)).DateTime;
         return (
             FromUts(contents.Property(JwtConstants.nbf.ToString())?.Value),
             FromUts(contents.Property(JwtConstants.iat.ToString())?.Value),
@@ -231,17 +233,22 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
     // This method is used to show a timer indicating the expiration status of the token.
     void ShowTimer(JObject contents)
     {
+        const string NoDate = "not specified";
         var (notBefore, issuedAt, expiresOn) = GetTimeAttributesFromJwt(contents);
+        Control DisplayOrNone(object value) => new DumpContainer(value);
         OutputInternal(
             new Table(rows: new[] {
                 new TableRow(true, new Span("Issued at"), new Span("Expires"), new Span("Total length of token")),
-                new TableRow(false, issuedAt.UpdateInPlace(),
-                                    expiresOn.UpdateInPlace(),
-                                    new Span(expiresOn.Subtract(issuedAt).Humanize(precision: 2)))
+                new TableRow(false, 
+                    DisplayOrNone(issuedAt.HasValue ? issuedAt.Value.UpdateInPlace().ToControl() : Util.Metatext(NoDate)),
+                    DisplayOrNone(expiresOn.HasValue ? expiresOn.Value.UpdateInPlace().ToControl() : Util.Metatext(NoDate)),
+                    DisplayOrNone(expiresOn.HasValue && issuedAt.HasValue 
+                        ? new Span(expiresOn.Value.Subtract(issuedAt.Value).Humanize(precision: 2)) 
+                        : Util.Metatext(NoDate))
+                )
             })
         );
-        // Get a pooled timer as an observable sequence.
-        // This is a workaround to avoid creating multiple observables for the same timer.
+        if (!issuedAt.HasValue || !expiresOn.HasValue) return;
         var observable = LocalDisplayExtensions.GetTimer(TimeSpan.FromSeconds(1))
                                                .Select(_ => DateTime.UtcNow);
         var bar = new Util.ProgressBar(Caption())
@@ -264,22 +271,19 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
             }
         );
         return;
-        // This method is used to calculate the percentage of time elapsed since the token was issued.
         string Caption()
         {
-            var dt = expiresOn.Subtract(DateTime.UtcNow);
+            var dt = expiresOn.Value.Subtract(DateTime.UtcNow);
             var isPast = dt.TotalMilliseconds < 0;
             var status = isPast ? "expired" : "expires in";
-            var when = expiresOn.Subtract(DateTime.UtcNow)
-                                .Humanize(precision: 2);
+            var when = dt.Humanize(precision: 2);
             var past = isPast ? " ago" : string.Empty;
             return $"Token {status} {when}{past}";
         }
-        // This method is used to calculate the percentage of time elapsed since the token was issued.
         int CalculatePercentage(DateTime o)
         {
-            double totalTimeSpan = expiresOn.Subtract(notBefore).TotalSeconds;
-            double secondsSinceStart = o.Subtract(notBefore).TotalSeconds;
+            double totalTimeSpan = expiresOn.Value.Subtract(notBefore.GetValueOrDefault(issuedAt.Value)).TotalSeconds;
+            double secondsSinceStart = o.Subtract(notBefore.GetValueOrDefault(issuedAt.Value)).TotalSeconds;
             var percentage = (secondsSinceStart / totalTimeSpan) * 100;
             return (int)percentage;
         }
@@ -302,12 +306,16 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
     }
 }
 // This class is used to create a DumpContainer that displays the latest value from an observable sequence.
+// LINQpad has an extension DumpLatest which is essentially what this code is doing, but that extension
+// returns the observable not the dump container, so that's why this was needed.
 internal sealed class LatestDumpContainer<T> : DumpContainer, IDisposable
 {
     private readonly IDisposable _subscription;
     public LatestDumpContainer(IObservable<T> content)
     {
         _subscription = content.Subscribe(OnNextAction);
+        // Staying consistent with LINQpad observable display convention, I'm using the same
+        // styling that DumpLatest uses.
         Style = "color:green";
     }
     private void OnNextAction(T item) => Content = item;
@@ -318,29 +326,15 @@ internal sealed class LatestDumpContainer<T> : DumpContainer, IDisposable
 internal static class LocalDisplayExtensions
 {
     // This method is used to create a timer that triggers at a specified interval.
-    // It uses a dictionary to cache the timers and avoid creating multiple instances for the same interval.
     private static TimeSpan DefaultTimer(TimeSpan? t) => t ?? 1.Seconds();
     // This method is used to create a preloaded observable sequence that emits the initial value and then merges with the provided sequence.
     // It uses the LatestDumpContainer to display the latest value.
     private static DumpContainer CreatePreloadedObservable<T>(Func<T> value, IObservable<T> sequence) =>
-        new LatestDumpContainer<T>(Observable.Empty<T>()
-                                             .Prepend(value())
-                                             .Merge(sequence));
-    // Cached timers to avoid creating multiple instances for the same interval.                                             
-    private static Dictionary<TimeSpan, IObservable<long>> internalTimers = new();
-    // Method to get a timer for a specified interval. It checks if the timer already exists in the cache and returns it if it does.    
+        new LatestDumpContainer<T>(sequence.StartWith(value()));
     internal static IObservable<long> GetTimer(TimeSpan? refreshTime)
-    {
-        var t = DefaultTimer(refreshTime);
-        if (!internalTimers.TryGetValue(t, out var o))
-        {
-            // .Publish is used to create a hot observable that shares the same subscription for all observers.
-            // .RefCount is used to automatically unsubscribe when there are no observers left.
-            o = Observable.Interval(t).Publish().RefCount();
-            internalTimers[t] = o;
-        }
-        return o;
-    }
+    // .Publish is used to create a hot observable that shares the same subscription for all observers.
+    // .RefCount is used to automatically unsubscribe when there are no observers left.
+        => Observable.Interval(DefaultTimer(refreshTime)).Publish().RefCount();
     // This method is used to create a timer that triggers at a specified interval and produces a value using the provided function.
     // DistinctUntilChanged is used to avoid emitting the same value multiple times.
     static public DumpContainer Timer(Func<string> produceValue, TimeSpan? refreshTime) => 
@@ -349,6 +343,4 @@ internal static class LocalDisplayExtensions
                                            select produceValue()).DistinctUntilChanged());
     public static DumpContainer UpdateInPlace(this DateTime t, TimeSpan? refreshTime = null) =>
         Timer(() => $"{t} - {t.Humanize()}", refreshTime);
-    public static DumpContainer UpdateInPlaceFromAction(this Func<long, string> select, TimeSpan? refreshTime = null) =>
-        Timer(() => select(0), refreshTime);
 }
