@@ -149,7 +149,7 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
         var headerObjects = JsonConvert.DeserializeObject(header) as JObject;
         
         Output(
-            from property in headerObjects?.Concat(objects.Children())
+            from property in headerObjects?.Concat(objects?.Children() ?? Enumerable.Empty<JToken>())
             let name = ((JProperty)property).Name
             where !exclude.Contains(name)
             select property
@@ -207,10 +207,12 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
         }
         // This method is used to format the property value for display.
         // It checks if the property name is in the set of time-based attributes and formats it accordingly.
-        return (object)new {
+        return (object)new
+        {
             Name = getName(x.Name),
-            Value = x switch {
-                _ when TimeBasedAttributes.Contains(x.Name) => 
+            Value = x switch
+            {
+                _ when TimeBasedAttributes.Contains(x.Name) =>
                         LocalDisplayExtensions.Timer(
                             () => LongToHumanTime((long?)x.Value),
                             TimeSpan.FromSeconds(2)),
@@ -220,9 +222,9 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
     }
     (DateTime? notBefore, DateTime? issuedAt, DateTime? expiresOn) GetTimeAttributesFromJwt(JObject contents)
     {
-        DateTime? FromUts(JToken? inp) 
-            => inp == null 
-               ? (DateTime?)null 
+        DateTime? FromUts(JToken? inp)
+            => inp == null
+               ? (DateTime?)null
                : DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(inp)).DateTime;
         return (
             FromUts(contents.Property(JwtConstants.nbf.ToString())?.Value),
@@ -231,19 +233,20 @@ public JObject? DumpToken(string token, DumpContainer? container = null, string[
         );
     }
     // This method is used to show a timer indicating the expiration status of the token.
-    void ShowTimer(JObject contents)
+    void ShowTimer(JObject? contents)
     {
+        if (contents == null) return;
         const string NoDate = "not specified";
         var (notBefore, issuedAt, expiresOn) = GetTimeAttributesFromJwt(contents);
         Control DisplayOrNone(object value) => new DumpContainer(value);
         OutputInternal(
             new Table(rows: new[] {
                 new TableRow(true, new Span("Issued at"), new Span("Expires"), new Span("Total length of token")),
-                new TableRow(false, 
+                new TableRow(false,
                     DisplayOrNone(issuedAt.HasValue ? issuedAt.Value.UpdateInPlace().ToControl() : Util.Metatext(NoDate)),
                     DisplayOrNone(expiresOn.HasValue ? expiresOn.Value.UpdateInPlace().ToControl() : Util.Metatext(NoDate)),
-                    DisplayOrNone(expiresOn.HasValue && issuedAt.HasValue 
-                        ? new Span(expiresOn.Value.Subtract(issuedAt.Value).Humanize(precision: 2)) 
+                    DisplayOrNone(expiresOn.HasValue && issuedAt.HasValue
+                        ? new Span(expiresOn.Value.Subtract(issuedAt.Value).Humanize(precision: 2))
                         : Util.Metatext(NoDate))
                 )
             })
@@ -337,7 +340,7 @@ internal static class LocalDisplayExtensions
         => Observable.Interval(DefaultTimer(refreshTime)).Publish().RefCount();
     // This method is used to create a timer that triggers at a specified interval and produces a value using the provided function.
     // DistinctUntilChanged is used to avoid emitting the same value multiple times.
-    static public DumpContainer Timer(Func<string> produceValue, TimeSpan? refreshTime) => 
+    static public DumpContainer Timer(Func<string> produceValue, TimeSpan? refreshTime) =>
         CreatePreloadedObservable<string>(produceValue,
                                           (from _ in GetTimer(refreshTime)
                                            select produceValue()).DistinctUntilChanged());
