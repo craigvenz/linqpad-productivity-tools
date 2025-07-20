@@ -2,7 +2,8 @@
   <NuGetReference>Azure.ResourceManager.AppService</NuGetReference>
   <NuGetReference>Azure.ResourceManager.Network</NuGetReference>
   <NuGetReference>Azure.ResourceManager.Resources</NuGetReference>
-  <NuGetReference>Lcp.LINQPad</NuGetReference>
+  <NuGetReference>Newtonsoft.Json</NuGetReference>
+  <NuGetReference>System.Reactive</NuGetReference>
   <Namespace>Azure.ResourceManager.AppService</Namespace>
   <Namespace>Azure.ResourceManager.Resources</Namespace>
   <Namespace>LINQPad.Controls</Namespace>
