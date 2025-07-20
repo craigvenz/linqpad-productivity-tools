@@ -1,9 +1,10 @@
 <Query Kind="Statements">
-  <Namespace>LINQPad.Controls</Namespace>
-  <Namespace>System.Reactive.Linq</Namespace>
+  <NuGetReference>System.Reactive</NuGetReference>
   <Namespace>Humanizer</Namespace>
+  <Namespace>LINQPad.Controls</Namespace>
   <Namespace>System.Globalization</Namespace>
   <Namespace>System.Reactive.Concurrency</Namespace>
+  <Namespace>System.Reactive.Linq</Namespace>
   <AutoDumpHeading>true</AutoDumpHeading>
 </Query>
 

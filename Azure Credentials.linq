@@ -41,7 +41,7 @@ public string TenantId
         if (string.IsNullOrEmpty(tenantId))
         {
 			//TODO: Set your default Tenant here
-			TenantId = "deadbeef-dead-beef-dead-beefdeadbeef";
+			TenantId = "68317e6a-8bfe-41ca-b265-86530f43f83f";
         }
         return tenantId;
     }

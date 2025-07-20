@@ -1,9 +1,10 @@
 <Query Kind="Program">
   <NuGetReference>Humanizer.Core</NuGetReference>
+  <NuGetReference>Newtonsoft.Json</NuGetReference>
   <Namespace>Humanizer</Namespace>
   <Namespace>LINQPad.Controls</Namespace>
   <Namespace>Newtonsoft.Json</Namespace>
-  <Namespace>Lcp.LINQPad.Extensions</Namespace>
+  <DisableMyExtensions>true</DisableMyExtensions>
   <AutoDumpHeading>true</AutoDumpHeading>
 </Query>
 
@@ -50,8 +51,15 @@ void Main()
 		}
 	}
 	DisplayLoadStringData();
-	new Button("Export User Data", _ => {
-        new TextArea(JsonConvert.SerializeObject(new { DataType = "userdata", Data = userDataFiles.ToDictionary(df => df.Name, df => Convert.ToBase64String(df.ReadAllBytes())) } ) ).Dump();
+    new Button("Export User Data", _ =>
+    {
+        var dt = Regex.Replace(DateTime.Now.ToString("O").Split('.')[0], "[:T-]", "");
+        var f = $@"E:\Dropbox\LinqpadUserDataBackup_{dt}.zip";
+        using var userDataBackup = File.OpenWrite(f);
+        System.IO.Compression.ZipFile.CreateFromDirectory(userDataPath.FullName, userDataBackup);
+        Console.WriteLine("Making zip file of '{0}' to file '{1}'.", userDataPath.FullName, f);
+        //new TextArea(JsonConvert.SerializeObject(new { DataType = "userdata", Data = userDataFiles.ToDictionary(df => df.Name, df => Convert.ToBase64String(df.ReadAllBytes())) } ) ).Dump();
+        
     }).Dump();
     
     var passwords = new DirectoryInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LINQPad", "Passwords")).Dump("Passwords Folder Path")
@@ -90,8 +98,22 @@ public static class Shortcuts
 		if (!npExe.Exists)
 			throw new FileNotFoundException("Could not find NotePad++ installation.");
         Util.Cmd($"{Quote(npExe.FullName)} {Quote(f)}");
-	}
-	public static byte[] ReadAllBytes(this FileInfo f) => !f.Exists ? Array.Empty<byte>() : File.ReadAllBytes(f.FullName);
+    }
+    public static bool IsJson(this Span<byte> data)
+    {
+        try
+        {
+            var reader = new System.Text.Json.Utf8JsonReader(data);
+            reader.Read();
+            reader.Skip();
+            return true;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
+    }
+    public static byte[] ReadAllBytes(this FileInfo f) => !f.Exists ? Array.Empty<byte>() : File.ReadAllBytes(f.FullName);
 	public static TReturn? Using<TDisposable, TReturn>(this TDisposable disposable, Func<TDisposable, TReturn> workFunc) where TDisposable : IDisposable
     {
         using (disposable)
