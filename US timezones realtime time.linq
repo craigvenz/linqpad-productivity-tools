@@ -1,4 +1,5 @@
 <Query Kind="Statements">
+  <NuGetReference>System.Reactive</NuGetReference>
   <Namespace>System.Reactive.Linq</Namespace>
   <Namespace>Humanizer</Namespace>
   <Namespace>LINQPad.Controls</Namespace>
@@ -49,21 +50,9 @@ class DateBox
 		Time.Click += ClipboardCopy;
 	}
 	// Copy the text of the clicked control to the clipboard
-	private void ClipboardCopy(object? sender, EventArgs ev)
-	{
-		void Run(object? text)
-		{
-			if (text == null) return;
-			System.Windows.Forms.Clipboard.SetText((string)text);
-		}
-		// This code runs in a separate thread, because using the clipboard requires STA mode
-		ParameterizedThreadStart pts = Run;
-		var t = new Thread(Run);
-		t.SetApartmentState(ApartmentState.STA);
-		t.Start(_currentTime.ToString());
-		t.Join();
-	}
-	// Update the date and time displayed
+    private void ClipboardCopy(object? sender, EventArgs ev)
+    => Util.Clipboard.SetText(_currentTime.ToString());
+    // Update the date and time displayed
 	public void Update(DateTimeOffset o)
 	{
 		_currentTime = o.ToOffset(_tz.BaseUtcOffset);
