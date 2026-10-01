@@ -55,9 +55,9 @@ class DateBox
     // Update the date and time displayed
 	public void Update(DateTimeOffset o)
 	{
-		_currentTime = o.ToOffset(_tz.BaseUtcOffset);
+		_currentTime = TimeZoneInfo.ConvertTime(o, _tz);
 		Date.Text = _currentTime.Date.ToShortDateString();
-		Time.Text = _currentTime.DateTime.ToString("HH:MM:ss");
+		Time.Text = _currentTime.DateTime.ToString("HH:mm:ss");
 	}
 	// The controls for the DateBox
 	public Span Date { get; } = new();
