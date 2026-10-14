@@ -4,13 +4,12 @@
 
 //  ═══ SLIDE 0 · COLD OPEN ═══ budget 1:00 ═══
 //
-//  SAY: "Show of hands: who's used LINQPad?"  (most hands)
-//       "Keep it up if you've used it for anything other than a SELECT."  (hands drop)
-//       "Right. That's the talk."
+//  "Show of hands: who's used LINQPad?"
+//  "Keep it up if you've used it for anything other than a SELECT."  (hands drop)
+//  "Right. That's the talk."
 //
-//  DO : Point at the screen. "This deck is not PowerPoint. It's twelve C#
-//       scripts and I'm clicking through them in the tree on the left."
-//       Let that land for a beat before moving on.
+//  "This deck is not PowerPoint. It's twelve C#
+//   scripts and I'm clicking through them in the tree on the left."
 
 void Main()
 {

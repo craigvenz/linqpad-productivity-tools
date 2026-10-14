@@ -29,42 +29,6 @@ async Task Main()
         .Where(parts => parts.Length == 2)
         .Select(parts => new { Version = parts[0], Path = parts[1].TrimEnd(']') })
         .Dump("Shell output → strongly-typed LINQ");
-    
-    
-
-    var bar = new Util.ProgressBar("Progress").Dump("Progress bar example");
-    _ = Task.Run(async () =>
-    {
-        Random r = new Random();
-        var verbs = new [] {
-            "Cogitating...",
-            "Thinking...",
-            "Thumbtwiddling...",
-            "Reticulating Splines...",
-            "Dilly-dallying...",
-            "Procrastinating...",
-            "Drinking tea...",
-        };
-        int captionIndex = 0;
-        bar.Caption = verbs.ElementAt(captionIndex);
-        while (!ScriptCancelToken.IsCancellationRequested)
-        {
-            for (int i = 0; i <= 100; i += 2)
-            {
-                bar.Percent = i;
-                if (i % r.Next(25,35) == 0)
-                {
-                    int n = captionIndex;
-                    while (n == captionIndex)
-                        n = r.Next(verbs.Length);
-                    captionIndex = (captionIndex + 1) % verbs.Length;
-                    bar.Caption = verbs.ElementAt(captionIndex);
-                }
-                await Task.Delay(250);
-            }
-            await Task.Delay(1);
-        }
-    }, ScriptCancelToken);
 
     Points(
         "`Util.Cmd` (plus `Util.Bash` / `Util.Zsh` on macOS) · `Util.Run` to call one script from another.",

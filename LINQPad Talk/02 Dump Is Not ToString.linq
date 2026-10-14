@@ -1,16 +1,13 @@
 <Query Kind="Program">
+  <NuGetReference>System.Reactive</NuGetReference>
+  <Namespace>LINQPad.Controls</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
 </Query>
 
 #load "SlideKit.linq"
 
 //  ═══ SLIDE 2 · DUMP() ═══ budget 4:00 ═══  ★ BIGGEST BANG FOR TIME ★
-//
-//  SAY: "If you take one thing away today: .Dump() is a debugger you can commit."
-//
-//  DO : Run it, then SCROLL SLOWLY. Let the output do the work.
-//       Click a column header to sort. Click a collapse triangle.
-//       Do NOT narrate every line — point at three things and move on.
+//  "If you take one thing away today: .Dump() is a debugger you can commit."
 
 void Main()
 {
@@ -18,8 +15,9 @@ void Main()
 
     Meme("", "Adding Console.WriteLine to find a bug", "", NpcWojak);
 
-    // --- 2a. Object graphs: rendered, interactive ---------------------------
-    // SAY: "Console.WriteLine gives you a type name. Dump gives you the object."
+    const string DemoLabel = "Start the demo";
+    // --- 2a. Object graphs: rendered, interactive
+    // "Console.WriteLine gives you a type name. Dump gives you the object."
     var people = new[]
     {
         new { Name = "Ada",     Role = "Engineer", Joined = new DateTime(2019, 3, 1),  Score = 97 },
@@ -27,46 +25,99 @@ void Main()
         new { Name = "Alan",    Role = "Analyst",  Joined = new DateTime(2023, 1, 9),  Score = 64 },
         new { Name = "Barbara", Role = "Manager",  Joined = new DateTime(2018, 11, 2), Score = 88 },
     };
-    people.Dump("Rich text: collapsible, totals in the footer, bar-graph icon on numeric columns");
+    Util.OnDemand(DemoLabel, () => people).Dump("Rich text: collapsible, totals in the footer, bar-graph icon on numeric columns");
 
-    // SAY: "Want sorting and search? Same call, one flag — it becomes a real grid."
-    // DO : Click 'Score' to sort; type into a column box to filter incrementally.
-    people.Dump(new DumpOptions(toDataGrid: true,
-        description: "Data grid — click headers to sort, drag to reorder, type to search"));
+    // "Want sorting? Same call, one flag — it becomes a real grid."
+    Util.OnDemand(DemoLabel, () => people.Dump(new DumpOptions(toDataGrid: true, description:"Data grid demo")))
+        .Dump("Data grid — click headers to sort, drag to reorder");
 
-    // --- 2b. Conditional highlighting ---------------------------------------
-    // SAY: "Now make the bad rows red. One method, no CSS."
-    people.Select(p => Util.HighlightIf(p.Score < 80, p)).Dump("Util.HighlightIf");
+    // --- 2b. Conditional highlighting 
+    // "Now make the bad rows red. One method, no CSS."
+    Util.OnDemand(DemoLabel, () => people.Select(p => Util.HighlightIf(p.Score < 80, p))).Dump("HighlightIf - change styling based on a predicate");
 
-    // --- 2c. Side by side ----------------------------------------------------
-    // SAY: "Comparing two sets? Don't scroll. Put them next to each other."
-    Util.HorizontalRun("Engineers,Everyone else",
+    // --- 2c. Side by side
+    // "Comparing two sets? Don't scroll. Put them next to each other."
+    Util.OnDemand(DemoLabel,
+        () => Util.HorizontalRun("Engineers, Everyone else",
         people.Where(p => p.Role == "Engineer"),
-        people.Where(p => p.Role != "Engineer")).Dump("Util.HorizontalRun");
+        people.Where(p => p.Role != "Engineer"))).Dump("Side-by-side demo");
 
-    // --- 2d. Structural diff — THE crowd-pleaser, don't rush it --------------
-    // SAY: "This one has saved me actual days. Two objects. What changed?"
+    // --- 2d. Structural diff 
+    // "Two objects. What changed?"
     var before = new { Name = "Ada", Role = "Engineer",  Score = 97, Tags = new[] { "a", "b" } };
     var after  = new { Name = "Ada", Role = "Principal", Score = 99, Tags = new[] { "a", "c" } };
-    Util.Dif(before, after).Dump("Util.Dif — structural diff of any two objects");
+    Util.OnDemand(DemoLabel, () =>
+        new StackPanel(false,
+            new DumpContainer(
+                Util.WithHeading(
+                    Util.Dif(before, after),
+                    "Util.Dif — structural diff of any two objects")
+                ),
+            new DumpContainer(
+                Util.WithHeading(
+                    Util.Dif(
+                        "The quick brown fox jumps over the lazy dog.",
+                        "The quick brown fox leaps right over the lazy dog!"
+                    ),
+                    "... and it does text, including whole source files"
+                )
+            )
+        )
+    ).Dump("Util.Dif demo");
 
-    Util.Dif(
-        "The quick brown fox jumps over the lazy dog.",
-        "The quick brown fox leaps right over the lazy dog!").Dump("…and it does text, including whole source files");
+    // --- 2e. It knows what things ARE
+    // "It doesn't just reflect over properties. It recognises types."
+    Util.OnDemand(DemoLabel,
+        () => new StackPanel(false,
+            new DumpContainer(
+                Util.WithHeading(XElement.Parse("<order id='42'><line sku='ABC' qty='2'/></order>"),"XML")
+            ),
+            new DumpContainer(
+                Util.WithHeading(System.Text.Json.Nodes.JsonNode.Parse("""{"name":"Ada","langs":["C#","F#"]}"""), "JSON")
+            ),
+            new DumpContainer(
+                Util.WithHeading(
+                    Util.Latex(@"\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}"),"LaTeX, because why not")
+            )
+        )
+    ).Dump("Context aware output");
 
-    // --- 2e. It knows what things ARE ---------------------------------------
-    // SAY: "It doesn't just reflect over properties. It recognises types."
-    XElement.Parse("<order id='42'><line sku='ABC' qty='2'/></order>").Dump("XML");
-    System.Text.Json.Nodes.JsonNode.Parse("""{"name":"Ada","langs":["C#","F#"]}""").Dump("JSON");
-    Util.Latex(@"\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}").Dump("LaTeX, because why not");
+    // --- 2f. Private members, no debugger
+    // "And when the library author made everything private…"
+    Util.OnDemand(DemoLabel,
+        () =>
+        {
+            var steps = new List<object>();
+            void Step(object value, string heading) => steps.Add(Util.WithHeading(value, heading));
 
-    // --- 2f. Private members, no debugger -----------------------------------
-    // SAY: "And when the library author made everything private…"
-    new StringBuilder("hello").Dump("Private fields, no breakpoint", includePrivate: true);
+            var demo = new DemoClass(10);
+            var before = Util.Snapshot(demo);
 
-    // --- 2g. Things that move -----------------------------------------------
-    // SAY: "Dump is async-aware. Watch these fill in."
-    Enumerable.Range(1, 6).Select(i => SlowThing(i)).Dump("Six tasks, dumped live");
+            Step(before, "A class with private methods");
+            Step(demo.GetType(), "Its type");
+
+            // compiler error as you'd expect
+            //demo.Value = 5;
+            //demo.AddToValue(5);
+
+            var mi = demo.GetType().GetMethod("AddToValue", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            Step(mi, "Fetching the method by reflection");
+
+            mi.Invoke(demo, [5]);
+            
+            var after = Util.Snapshot(demo);
+            
+            Step(after, "Result after invocation of method by reflection (the standard way)");
+
+            Step(Util.Dif(before,after), "Diff of the two objects");
+
+            return Util.VerticalRun(steps);
+        }
+    ).Dump("Private methods demo");
+
+    // --- 2g. Things that move 
+    // "Dump is async-aware. Watch these fill in."
+    Util.OnDemand(DemoLabel, () => Enumerable.Range(1, 6).Select(i => SlowThing(i))).Dump("Six tasks, dumped live");
 
     Nav(2, "Util.Cache", TimeSpan.FromMinutes(4));
 
@@ -74,6 +125,20 @@ void Main()
     {
         await Task.Delay(i * 2500);
         return $"task {i} finished";
+    }
+}
+
+public class DemoClass
+{
+    private int _val;
+    public int Value => _val;
+    private void AddToValue(int i)
+    {
+        _val += i;
+    }
+    public DemoClass(int initial)
+    {
+        _val = initial;
     }
 }
 const string NpcWojak="""

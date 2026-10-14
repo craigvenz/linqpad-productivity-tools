@@ -3,9 +3,6 @@
 #load "SlideKit.linq"
 
 //  ═══ SLIDE 5 · OTHER PEOPLE'S CODE ═══ budget 4:00 ═══  ★ SECOND BIGGEST ★
-//
-//  SAY: "This is the part almost nobody knows about, and it's the part I
-//        personally use the most."
 
 void Main()
 {
@@ -13,25 +10,21 @@ void Main()
 
     Meme("", "encapsulation is a suggestion", "", MonocleGuy);
 
-
-    // --- 5a. Decompile anything ---------------------------------------------
-    // SAY: "ILSpy is built in. Any type, any assembly, any NuGet package."
+    // --- 5a. Decompile anything
+    // "ILSpy is built in. Any type, any assembly, any NuGet package."
     typeof(string).GetMethod("Contains", new[] { typeof(string) })
         .Decompile().Dump("How does string.Contains actually work?");
 
     typeof(StringBuilder).Decompile(signaturesOnly: true)
         .Dump("…or just the API surface of a whole type");
 
-    // --- 5b. Drop to IL ------------------------------------------------------
-    // SAY: "And for settling an argument about boxing, in the meeting:"
+    // --- 5b. Drop to IL
     typeof(Demo).GetMethod(nameof(Demo.Add)).Disassemble().Dump("Actual IL");
 
-    // --- 5c. Uncapsulate — reflection without the ceremony ------------------
-    // SAY: "Reflection, except you just… type the private member's name."
+    // --- 5c. Uncapsulate — reflection without the ceremony
     var flags = new Uri("https://example.com/x?y=1").Uncapsulate()._syntax._flags;
     ((object)flags).Dump("Uri's private parser flags. No BindingFlags. No GetField.");
 
-    // SAY: "Ever wondered what List<T>'s growth really looks like? Look inside."
     var list = new List<int> { 1, 2, 3, 4, 5 };
     new
     {
@@ -40,7 +33,6 @@ void Main()
         BackingArray = (int[])list.Uncapsulate()._items   // the real array, slack slots and all
     }.Dump("Count is 5. The private array is not.");
 
-    // Private *types*, addressed by string — they don't even have to be public:
     Uncapsulate("System.Text.StringBuilderCache").Dump("A private BCL type's statics");
 
     // Overload resolution, ref/out, generics, indexers, explicit interface

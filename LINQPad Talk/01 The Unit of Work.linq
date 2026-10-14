@@ -4,15 +4,14 @@
 
 //  ═══ SLIDE 1 · THE THESIS ═══ budget 2:00 ═══
 //
-//  DO FIRST (the best 15 seconds of the talk):
 //    Press Ctrl+1 to switch this tab to "C# Expression".
 //    Type:   DateTime.Now.AddDays(90)
 //    Press F5. Done. No project, no Main, no build.
 //    Press Ctrl+3 to come back to Program mode, then F5 for the rest.
 //
-//  SAY: "The unit of work in .NET is a *project*. That's the bug.
-//        LINQPad's unit of work is an *expression*. Everything else
-//        in this talk is a consequence of that one decision."
+//  "The unit of work in .NET is a *project*. That's the bug.
+//   LINQPad's unit of work is an *expression*. Everything else
+//   in this talk is a consequence of that one decision."
 
 void Main()
 {
@@ -33,7 +32,7 @@ void Main()
         | **C# Program** `Ctrl+3` | `void Main()` + types | real scripts (like this deck) |
         """).Dump("Pick your ceremony level");
 
-    // SAY: "And it's not a toy interpreter. Full Roslyn, current .NET, real IL."
+    // "And it's not a toy interpreter. Full Roslyn, current .NET, real IL."
     new
     {
         Runtime = Environment.Version.ToString(),

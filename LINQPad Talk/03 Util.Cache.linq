@@ -4,16 +4,12 @@
 
 //  ═══ SLIDE 3 · UTIL.CACHE ═══ budget 2:00 ═══
 //
-//  DO : Run it — it stalls 3 seconds. Run it AGAIN — instant.
-//       Then EDIT the marked line live and re-run: still instant.
+//  Run it — it stalls 3 seconds. Run it AGAIN — instant.
+//  Then EDIT the marked line live and re-run: still instant.
 //
-//  SAY: "The process is preserved between runs. So the expensive thing stays
-//        hot while you iterate on the code around it. That's a REPL, in a
-//        compiled language, for free."
-//
-//  ⚠ REHEARSAL DECISION: the 3-second stall IS the demo — the payoff needs
-//    the contrast. Don't accidentally pre-warm it by testing right before
-//    you present. If you do, press Ctrl+Shift+F5 to kill the process first.
+//  "The process is preserved between runs. So the expensive thing stays
+//   hot while you iterate on the code around it. That's a REPL, in a
+//    compiled language, for free."
 
 void Main()
 {
@@ -27,13 +23,14 @@ void Main()
 
     expensive.Count.Dump("Rows — slow the first time, free forever after");
 
-    // ↓↓↓ EDIT THIS LINE LIVE AND RE-RUN. No re-fetch. That is the demo. ↓↓↓
-    expensive.Where(x => x.Id % 99_991 == 0).Dump("Iterate on the query, not on the fetch");
+    // EDIT THIS LINE LIVE AND RE-RUN. No re-fetch. That is the demo.
+    expensive.Where(x => x.Id % 50000 == 0).Dump("Iterate on the query, not on the fetch");
 
     Points(
         "`Util.Cache` survives between executions because LINQPad **reuses the process**.",
         "Also `Util.CacheAsync` for tasks, and `.Cache()` as an extension on any `IEnumerable<T>`.",
         "`Ctrl+Shift+F5` kills the process when you want a clean slate.",
+        "Longer persistance between queries? `Util.SaveString()` / `Util.LoadString()` / `Util.GetPassword()` / `Util.SavePassword()`",
         "**This is the biggest workflow change on the list.** Fetch once, explore for an hour.");
 
     Meme("Re-running the 90-second query", "Because you typo'd a column name", "", FacePalm);

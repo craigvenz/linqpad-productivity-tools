@@ -14,13 +14,12 @@ using System.Reactive.Linq;
 //   keeping the talk folder clean for clicker navigation.)
 //
 //  Nav() shows a live budget clock (Rx + DumpContainer): counts down, then
-//  turns red and counts up once you're over. It keeps the script alive via
-//  Util.KeepRunning — press Stop (or run the next slide) to end it.
+//  turns red and counts up once you're over.
 //
 //  ShowCode() pretty-prints a snippet *and* offers a link that writes it to a
 //  temp .linq file and opens it in a fresh tab — so you can F5 it live.
 //
-//  Bonus: this file is itself a demo. Mention it on slide 08.
+//  Bonus: this file is itself a demo.
 // ═══════════════════════════════════════════════════════════════════════════
 
 int TotalSlides = Util.Cache(() =>
@@ -41,7 +40,8 @@ void Slide(string title, string? subtitle = null)
     Util.RawHtml(html).Dump();
 }
 
-// Impact-font meme card.
+// Impact-font meme card. `image` is a URL/path; `imageFromBytes` is embedded as a data: URI.
+// Supports GIF/PNG/JPEG/WebP/AVIF/BMP via <img>, and WebM/MP4 via a looping, muted <video>.
 void Meme(string top, string bottom, string emoji = "🤔", string image = "", byte[]? imageFromBytes = null)
 {
     var html = new StringBuilder();
@@ -54,10 +54,12 @@ void Meme(string top, string bottom, string emoji = "🤔", string image = "", b
     if (!string.IsNullOrEmpty(emoji))
         html.AppendFormat(@"          <div style=""font-size:44pt;line-height:1.1;margin:6px 0"">{0}</div>", emoji);
     if (!string.IsNullOrEmpty(image))
-        html.AppendFormat(@"          <div><img src=""{0}"" style=""width:75%;height:auto;display:block;margin:6px auto""></div>", image);
+        html.Append(MediaTag(image, IsVideoPath(image)));
     if (imageFromBytes != null)
-        html.AppendFormat(@"          <div><img src=""{0}"" style=""width:75%;height:auto;display:block;margin:6px auto""></div>",
-        ImageToBase64(imageFromBytes));
+    {
+        var mime = SniffMimeType(imageFromBytes);
+        html.Append(MediaTag(ToDataUri(imageFromBytes, mime), mime.StartsWith("video/")));
+    }
     html.AppendFormat("""
           <div style="font:700 21pt Impact,Haettenschweiler,sans-serif;color:#fff;text-transform:uppercase;
                       text-shadow:2px 2px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000">{0}</div>
@@ -66,14 +68,40 @@ void Meme(string top, string bottom, string emoji = "🤔", string image = "", b
     Util.RawHtml(html.ToString()).Dump();
 }
 
-string ImageToBase64(byte[] bytes)
+// <img> for images, <video autoplay loop muted> for video (WebView2 won't animate WebM in an <img>).
+string MediaTag(string src, bool isVideo)
 {
-    using var di = System.Drawing.Image.FromStream(new MemoryStream(bytes));
-    var format = ImageCodecInfo.GetImageEncoders().FirstOrDefault(ici => ici.FormatID == di.RawFormat.Guid);
-    var sb = new StringBuilder();
-    sb.AppendFormat(" data:{0};base64,", format?.MimeType ?? throw new ArgumentException("Unknown image format"));
-    sb.Append(Convert.ToBase64String(bytes));
-    return sb.ToString();
+    const string style = "width:75%;height:auto;display:block;margin:6px auto";
+    var encoded = System.Net.WebUtility.HtmlEncode(src);
+    return isVideo
+        ? $"""          <div><video src="{encoded}" autoplay loop muted playsinline style="{style}"></video></div>"""
+        : $"""          <div><img src="{encoded}" style="{style}"></div>""";
+}
+
+bool IsVideoPath(string path) =>
+    Path.GetExtension(path.Split('?', '#')[0]).ToLowerInvariant() is ".webm" or ".mp4" or ".mkv" or ".mov";
+
+// Returns an html-embeddable data: URI (image or video) from raw bytes.
+string ImageToBase64(byte[] bytes) => ToDataUri(bytes, SniffMimeType(bytes));
+
+string ToDataUri(byte[] bytes, string mime) => $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
+
+// Identify the format from magic bytes (System.Drawing/GDI+ can't read WebP, AVIF or WebM).
+string SniffMimeType(byte[] b)
+{
+    bool At(int offset, string ascii) =>
+        b.Length >= offset + ascii.Length && ascii.Select((c, i) => b[offset + i] == c).All(x => x);
+
+    if (At(0, "GIF87a") || At(0, "GIF89a"))            return "image/gif";
+    if (At(0, "\x89PNG"))                              return "image/png";
+    if (b.Length >= 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF) return "image/jpeg";
+    if (At(0, "RIFF") && At(8, "WEBP"))                return "image/webp";
+    if (At(4, "ftyp"))                                 // ISO-BMFF: AVIF or MP4
+        return At(8, "avif") || At(8, "avis") ? "image/avif" : "video/mp4";
+    if (b.Length >= 4 && b[0] == 0x1A && b[1] == 0x45 && b[2] == 0xDF && b[3] == 0xA3)
+        return "video/webm";                           // EBML header (WebM/Matroska)
+    if (At(0, "BM"))                                   return "image/bmp";
+    throw new ArgumentException("Unrecognised image/video format");
 }
 
 // Talking-point bullets (markdown, so **bold** and `code` work).
@@ -115,7 +143,7 @@ void Nav(int slideNo, string nextUp, TimeSpan? budget = null)
     void Render(string budgetHtml) => dc.Content = Util.RawHtml($"""
         <div style="font-family:Segoe UI,system-ui;font-size:9.5pt;opacity:.5;
                     border-top:1px solid #8884;margin-top:1.4em;padding-top:.5em">
-          Slide {slideNo} of {TotalSlides}{budgetHtml}
+          Slide {slideNo+1} of {TotalSlides}{budgetHtml}
           &nbsp;·&nbsp; next: <b>{nextUp}</b>
         </div>
         """);
